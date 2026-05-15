@@ -101,6 +101,7 @@ dependencies {
     implementation("net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}")
     compileOnly("maven.modrinth:sable:${sable_version}")
     compileOnly(files("libs/sable-companion-common-1.21.1-1.6.0.jar"))
+    compileOnly(files("libs/veil-neoforge-1.21.1-4.0.0.jar"))
 
 
     compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}")
