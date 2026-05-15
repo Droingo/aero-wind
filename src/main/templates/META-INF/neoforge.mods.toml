@@ -31,3 +31,17 @@ type="required"
 versionRange="[6.0.10,6.1.0)"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="sable"
+type="required"
+versionRange="[1.2.1,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="simulated"
+type="required"
+versionRange="[1.2.1,)"
+ordering="AFTER"
+side="BOTH"
