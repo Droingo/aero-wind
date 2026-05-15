@@ -11,6 +11,9 @@ public final class AeroWind {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public AeroWind(IEventBus modEventBus) {
+        AeroWindBlocks.BLOCKS.register(modEventBus);
+        AeroWindBlocks.ITEMS.register(modEventBus);
+
         LOGGER.info("Aero Wind loaded");
     }
 }
