@@ -9,16 +9,25 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.droingo.aerowind.sable.SableWindAccess;
+import net.minecraft.server.level.ServerLevel;
 
 public class WindProjectorBlockEntity extends BlockEntity {
     private static final Vec3 DEBUG_WIND_DIRECTION = new Vec3(1.0D, 0.05D, 0.0D).normalize();
     private static final double DEBUG_WIND_SPEED = 0.035D;
+
+    private boolean loggedLevelClass = false;
 
     public WindProjectorBlockEntity(BlockPos pos, BlockState blockState) {
         super(AeroWindBlockEntities.WIND_PROJECTOR.get(), pos, blockState);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, WindProjectorBlockEntity blockEntity) {
+        if (!blockEntity.loggedLevelClass) {
+            blockEntity.loggedLevelClass = true;
+            AeroWind.LOGGER.info("Level implementation at {}: {}", pos, level.getClass().getName());
+        }
+
         if (level.getGameTime() % 100 == 0) {
             AeroWind.LOGGER.info(
                     "Wind Projector at {} windDirection={} windSpeed={}",
@@ -26,6 +35,20 @@ public class WindProjectorBlockEntity extends BlockEntity {
                     DEBUG_WIND_DIRECTION,
                     DEBUG_WIND_SPEED
             );
+        }
+        if (level instanceof ServerLevel serverLevel && level.getGameTime() % 100 == 0) {
+            var subLevel = SableWindAccess.findSubLevelAt(serverLevel, pos);
+
+            if (subLevel != null) {
+                AeroWind.LOGGER.info(
+                        "Wind Projector at {} is inside Sable sublevel {} runtimeId={}",
+                        pos,
+                        subLevel.getUniqueId(),
+                        subLevel.getRuntimeId()
+                );
+            } else {
+                AeroWind.LOGGER.info("Wind Projector at {} is not inside a Sable sublevel", pos);
+            }
         }
     }
 
