@@ -13,6 +13,7 @@ public final class AeroWind {
     public AeroWind(IEventBus modEventBus) {
         AeroWindBlocks.BLOCKS.register(modEventBus);
         AeroWindBlocks.ITEMS.register(modEventBus);
+        AeroWindBlockEntities.BLOCK_ENTITIES.register(modEventBus);
 
         LOGGER.info("Aero Wind loaded");
     }

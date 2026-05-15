@@ -9,6 +9,7 @@ import net.minecraft.world.level.material.MapColor;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredItem;
+import net.droingo.aerowind.block.WindProjectorBlock;
 
 public final class AeroWindBlocks {
     public static final DeferredRegister.Blocks BLOCKS =
@@ -17,13 +18,15 @@ public final class AeroWindBlocks {
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(AeroWind.MOD_ID);
 
-    public static final DeferredBlock<Block> WIND_PROJECTOR = BLOCKS.registerSimpleBlock(
+    public static final DeferredBlock<Block> WIND_PROJECTOR = BLOCKS.register(
             "wind_projector",
-            BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_LIGHT_BLUE)
-                    .strength(1.5F, 6.0F)
-                    .sound(SoundType.METAL)
-                    .requiresCorrectToolForDrops()
+            () -> new WindProjectorBlock(
+                    BlockBehaviour.Properties.of()
+                            .mapColor(MapColor.COLOR_LIGHT_BLUE)
+                            .strength(1.5F, 6.0F)
+                            .sound(SoundType.METAL)
+                            .requiresCorrectToolForDrops()
+            )
     );
 
     public static final DeferredItem<BlockItem> WIND_PROJECTOR_ITEM =
