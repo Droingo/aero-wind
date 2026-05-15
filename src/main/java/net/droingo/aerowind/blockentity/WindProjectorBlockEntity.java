@@ -4,6 +4,8 @@ import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.droingo.aerowind.AeroWind;
 import net.droingo.aerowind.AeroWindBlockEntities;
 import net.droingo.aerowind.sable.SableWindAccess;
+import net.droingo.aerowind.wind.WindModel;
+import net.droingo.aerowind.wind.WindSample;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -13,11 +15,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 public class WindProjectorBlockEntity extends BlockEntity {
-    private static final Vec3 DEBUG_WIND_DIRECTION = new Vec3(1.0D, 0.05D, 0.0D).normalize();
-    private static final double DEBUG_WIND_SPEED = 0.08D;
-
     private boolean loggedLevelClass = false;
 
     public WindProjectorBlockEntity(BlockPos pos, BlockState blockState) {
@@ -39,6 +39,16 @@ public class WindProjectorBlockEntity extends BlockEntity {
             return;
         }
 
+        if (level.getGameTime() % 100 == 0) {
+            int liftProviderCount = subLevel.getPlot().getLiftProviders().size();
+
+            AeroWind.LOGGER.info(
+                    "Sublevel {} has {} lift providers",
+                    subLevel.getUniqueId(),
+                    liftProviderCount
+            );
+        }
+
         SubLevelPhysicsSystem physicsSystem = SubLevelPhysicsSystem.get(serverLevel);
         if (physicsSystem == null) {
             return;
@@ -49,46 +59,72 @@ public class WindProjectorBlockEntity extends BlockEntity {
             return;
         }
 
-        Vector3d impulse = new Vector3d(
-                DEBUG_WIND_DIRECTION.x * DEBUG_WIND_SPEED,
-                DEBUG_WIND_DIRECTION.y * DEBUG_WIND_SPEED,
-                DEBUG_WIND_DIRECTION.z * DEBUG_WIND_SPEED
-        );
+        WindSample wind = WindModel.sample(serverLevel, Vec3.atCenterOf(pos));
+        Vec3 direction = wind.direction();
+
+        int layerHeight = 64;
+        int heightLayer = Math.floorDiv(pos.getY(), layerHeight);
+
+        long layerSeed = serverLevel.getSeed() ^ (heightLayer * 341873128712L);
+        RandomSource layerRandom = RandomSource.create(layerSeed);
+
+// Each height layer bends the normal daily wind by up to +/- 45 degrees
+        double layerOffset = (layerRandom.nextDouble() - 0.5) * Math.toRadians(90.0);
+
+        double baseAngle = Math.atan2(direction.z, direction.x);
+        double finalAngle = baseAngle + layerOffset;
+
+        Vec3 heightDirection = new Vec3(
+                Math.cos(finalAngle),
+                direction.y,
+                Math.sin(finalAngle)
+        ).normalize();
+
+
+
+
+
+        long gustWindow = level.getGameTime() / 20L; // 1 second chunks
+        long gustSeed = serverLevel.getSeed() ^ subLevel.getUniqueId().getMostSignificantBits() ^ gustWindow;
+
+        RandomSource gustRandom = RandomSource.create(gustSeed);
+
+// About 5% chance each second
+        boolean gusting = gustRandom.nextDouble() < 0.05;
+
+        Vector3d impulse;
+
+        if (gusting) {
+            double angle = gustRandom.nextDouble() * Math.PI * 2.0;
+            double gustStrength = wind.speed() * 4.0;
+
+            impulse = new Vector3d(
+                    Math.cos(angle) * gustStrength,
+                    0.0,
+                    Math.sin(angle) * gustStrength
+            );
+        } else {
+            impulse = new Vector3d(
+                    heightDirection.x * wind.speed(),
+                    heightDirection.y * wind.speed(),
+                    heightDirection.z * wind.speed()
+            );
+        }
 
         rigidBody.applyLinearImpulse(impulse);
         physicsSystem.getPipeline().wakeUp(subLevel);
 
         if (level.getGameTime() % 100 == 0) {
             AeroWind.LOGGER.info(
-                    "Applied DIRECT wind impulse to sublevel {} runtimeId={} velocity={}",
+                    "Wind impulse sublevel={} speed={} direction={} velocity={}",
                     subLevel.getUniqueId(),
-                    subLevel.getRuntimeId(),
+                    wind.speed(),
+                    heightDirection,
                     rigidBody.getLinearVelocity()
             );
         }
     }
 
     public static void clientTick(Level level, BlockPos pos, BlockState state, WindProjectorBlockEntity blockEntity) {
-        RandomSource random = level.random;
-
-        if (random.nextFloat() > 0.35F) {
-            return;
-        }
-
-        double x = pos.getX() + 0.5D + ((random.nextDouble() - 0.5D) * 2.0D);
-        double y = pos.getY() + 0.5D + (random.nextDouble() * 1.5D);
-        double z = pos.getZ() + 0.5D + ((random.nextDouble() - 0.5D) * 2.0D);
-
-        Vec3 particleVelocity = DEBUG_WIND_DIRECTION.scale(0.035D);
-
-        level.addParticle(
-                ParticleTypes.CLOUD,
-                x,
-                y,
-                z,
-                particleVelocity.x,
-                particleVelocity.y,
-                particleVelocity.z
-        );
     }
 }
